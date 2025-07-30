@@ -127,13 +127,13 @@ function extractEnhancedTextContent($: cheerio.CheerioAPI, urlObj: URL, domain: 
   return content.trim();
 }
 
-function processElementWithLinks($element: cheerio.Cheerio<any>, urlObj: URL, domain: string): string {
+function processElementWithLinks($element: cheerio.Cheerio<cheerio.Element>, urlObj: URL, domain: string): string {
   let content = '';
   
   // Process text nodes and links
   $element.contents().each((_, node) => {
     if (node.type === 'text') {
-      const text = (node as any).data || '';
+      const text = (node as cheerio.Text).data || '';
       if (text.trim()) {
         content += text + ' ';
       }
@@ -143,7 +143,7 @@ function processElementWithLinks($element: cheerio.Cheerio<any>, urlObj: URL, do
       if (tagName === 'a') {
         // Process links
         const href = node.attribs?.href;
-        const anchorText = (node.children?.[0] as any)?.data?.trim() || '';
+        const anchorText = (node.children?.[0] as cheerio.Text)?.data?.trim() || '';
         
         if (href && anchorText) {
           try {
@@ -169,7 +169,7 @@ function processElementWithLinks($element: cheerio.Cheerio<any>, urlObj: URL, do
             
             // Add link with markdown format for frontend processing
             content += `[${anchorText}](${cleanUrl}) `;
-          } catch (error) {
+          } catch {
             content += anchorText + ' ';
           }
         } else {
@@ -201,58 +201,7 @@ function processElementWithLinks($element: cheerio.Cheerio<any>, urlObj: URL, do
   return content;
 }
 
-function extractLinksContent($: cheerio.CheerioAPI, urlObj: URL, domain: string): string {
-  let content = '';
-  
-  $('a[href]').each((_, element) => {
-    const $element = $(element);
-    const href = $element.attr('href') || '';
-    const anchorText = $element.text().trim();
-    
-    if (href && href !== '#' && anchorText) {
-      try {
-        let absoluteUrl: string;
-        
-        if (href.startsWith('http')) {
-          absoluteUrl = href;
-        } else if (href.startsWith('//')) {
-          absoluteUrl = `https:${href}`;
-        } else if (href.startsWith('/')) {
-          absoluteUrl = `${urlObj.protocol}//${domain}${href}`;
-        } else if (href.startsWith('mailto:') || href.startsWith('tel:')) {
-          return;
-        } else {
-          absoluteUrl = `${urlObj.protocol}//${domain}/${href}`;
-        }
 
-        const normalizedLink = new URL(absoluteUrl);
-        normalizedLink.hash = '';
-        normalizedLink.search = '';
-        const cleanUrl = normalizedLink.toString();
-        
-        content += `Link: ${anchorText} -> ${cleanUrl}\n`;
-      } catch (error) {
-        // Skip invalid URLs
-      }
-    }
-  });
-  
-  return content.trim();
-}
-
-function extractButtonsContent($: cheerio.CheerioAPI): string {
-  let content = '';
-  
-  $('button, input[type="button"], input[type="submit"], input[type="reset"]').each((_, element) => {
-    const $element = $(element);
-    const buttonText = $element.text().trim() || $element.attr('value') || $element.attr('title') || 'Button';
-    const buttonType = $element.is('button') ? 'button' : $element.attr('type') || 'button';
-    
-    content += `${buttonType}: ${buttonText}\n`;
-  });
-  
-  return content.trim();
-}
 
 function extractImagesContent($: cheerio.CheerioAPI, urlObj: URL, domain: string): string {
   let content = '';
@@ -288,7 +237,7 @@ function extractImagesContent($: cheerio.CheerioAPI, urlObj: URL, domain: string
         const dimensions = width && height ? ` (${width}x${height})` : '';
         
         content += `Image: ${description}${dimensions} -> ${cleanUrl}\n`;
-      } catch (error) {
+      } catch {
         // Skip invalid URLs
       }
     }
@@ -297,18 +246,7 @@ function extractImagesContent($: cheerio.CheerioAPI, urlObj: URL, domain: string
   return content.trim();
 }
 
-function extractTextAndLinks($: cheerio.CheerioAPI, urlObj: URL, domain: string): { content: string; links: LinkInfo[] } {
-  const links: LinkInfo[] = [];
-  const seenLinks = new Set<string>();
-  
-  // Extract pure text content without any link formatting
-  let content = extractPureTextContent($);
-  
-  // Extract all links separately
-  extractAllLinks($, urlObj, domain, links, seenLinks);
-  
-  return { content, links };
-}
+
 
 function extractPureTextContent($: cheerio.CheerioAPI): string {
   // Clone the body to avoid modifying the original
@@ -322,12 +260,12 @@ function extractPureTextContent($: cheerio.CheerioAPI): string {
   
   // Process all text nodes recursively
   $body.contents().each((_, node) => {
-    if (node.type === 'text') {
-      const text = (node as any).data || '';
-      if (text.trim()) {
-        content += text + ' ';
-      }
-    } else if (node.type === 'tag') {
+          if (node.type === 'text') {
+        const text = (node as cheerio.Text).data || '';
+        if (text.trim()) {
+          content += text + ' ';
+        }
+      } else if (node.type === 'tag') {
       // For block elements, add line breaks
       const tagName = node.name;
       const isBlockElement = ['p', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li', 'br', 'hr'].includes(tagName);
@@ -340,7 +278,7 @@ function extractPureTextContent($: cheerio.CheerioAPI): string {
       const $element = $(node);
       $element.contents().each((_, childNode) => {
         if (childNode.type === 'text') {
-          const text = (childNode as any).data || '';
+          const text = (childNode as cheerio.Text).data || '';
           if (text.trim()) {
             content += text + ' ';
           }
@@ -454,7 +392,7 @@ function extractAllLinks($: cheerio.CheerioAPI, urlObj: URL, domain: string, lin
           
           links.push(linkInfo);
         }
-      } catch (error: unknown) {
+      } catch {
         // Skip invalid URLs
         console.warn(`Invalid URL: ${href}`);
       }
