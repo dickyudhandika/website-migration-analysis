@@ -127,13 +127,13 @@ function extractEnhancedTextContent($: cheerio.CheerioAPI, urlObj: URL, domain: 
   return content.trim();
 }
 
-function processElementWithLinks($element: cheerio.Cheerio<cheerio.Element>, urlObj: URL, domain: string): string {
+function processElementWithLinks($element: cheerio.Cheerio<any>, urlObj: URL, domain: string): string {
   let content = '';
   
   // Process text nodes and links
   $element.contents().each((_, node) => {
     if (node.type === 'text') {
-      const text = (node as cheerio.Text).data || '';
+      const text = (node as any).data || '';
       if (text.trim()) {
         content += text + ' ';
       }
@@ -143,7 +143,7 @@ function processElementWithLinks($element: cheerio.Cheerio<cheerio.Element>, url
       if (tagName === 'a') {
         // Process links
         const href = node.attribs?.href;
-        const anchorText = (node.children?.[0] as cheerio.Text)?.data?.trim() || '';
+        const anchorText = (node.children?.[0] as any)?.data?.trim() || '';
         
         if (href && anchorText) {
           try {
