@@ -24,10 +24,16 @@ interface ComparisonResult {
   };
 }
 
-interface ScrapedContent {
+interface ContentSection {
   title: string;
   content: string;
   links: LinkInfo[];
+}
+
+interface ScrapedContent {
+  title: string;
+  sections: ContentSection[];
+  allLinks: LinkInfo[];
   wordCount: number;
 }
 
@@ -152,6 +158,48 @@ export default function Home() {
           </table>
         </div>
       )}
+    </div>
+  );
+
+  const ContentSection = ({ section }: { section: ContentSection }) => (
+    <div className={styles.sectionContainer}>
+      <h3 className={styles.sectionTitle}>{section.title}</h3>
+      <div className={styles.sectionContent}>
+        {/* Display text content with clickable links and dividers */}
+        <div className={styles.textContent}>
+          {section.content.split('\n').map((line, lineIndex) => {
+            // Check if this line is a divider
+            if (line.trim() === '-----') {
+              return <div key={lineIndex} className={styles.divider}>-----</div>;
+            }
+            
+            // Process words in the line
+            return (
+              <div key={lineIndex}>
+                {line.split(/\s+/).map((word, wordIndex) => {
+                  // Check if this word is a link in markdown format [text](url)
+                  const linkMatch = word.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+                  if (linkMatch) {
+                    const [, anchorText, url] = linkMatch;
+                    return (
+                      <a 
+                        key={wordIndex}
+                        href={url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className={styles.inlineLink}
+                      >
+                        {anchorText}
+                      </a>
+                    );
+                  }
+                  return <span key={wordIndex}>{word} </span>;
+                })}
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 
@@ -419,7 +467,11 @@ export default function Home() {
                       </div>
                       <div className={styles.stat}>
                         <span className={styles.statLabel}>Links Found:</span>
-                        <span className={styles.statValue}>{scrapedContent.links.length}</span>
+                        <span className={styles.statValue}>{scrapedContent.allLinks.length}</span>
+                      </div>
+                      <div className={styles.stat}>
+                        <span className={styles.statLabel}>Sections:</span>
+                        <span className={styles.statValue}>{scrapedContent.sections.length}</span>
                       </div>
                     </div>
                   </div>
@@ -428,17 +480,19 @@ export default function Home() {
                 <div className={styles.details}>
                   <div className={styles.detailSection}>
                     <div className={styles.contentContainer}>
-                      <h3>Extracted Content</h3>
-                      <div className={styles.contentText}>
-                        {scrapedContent.content}
+                      <h3>Extracted Content by Sections</h3>
+                      <div className={styles.sectionsContainer}>
+                        {scrapedContent.sections.map((section, index) => (
+                          <ContentSection key={index} section={section} />
+                        ))}
                       </div>
                     </div>
                   </div>
 
                   <div className={styles.detailSection}>
                     <LinkTable 
-                      links={scrapedContent.links} 
-                      title="Content Links" 
+                      links={scrapedContent.allLinks} 
+                      title="All Content Links" 
                     />
                   </div>
                 </div>
