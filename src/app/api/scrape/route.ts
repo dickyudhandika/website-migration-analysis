@@ -248,73 +248,7 @@ function extractImagesContent($: cheerio.CheerioAPI, urlObj: URL, domain: string
 
 
 
-function extractPureTextContent($: cheerio.CheerioAPI): string {
-  // Clone the body to avoid modifying the original
-  const $body = $('body').clone();
-  
-  // Remove all script, style, and noscript elements
-  $body.find('script, style, noscript').remove();
-  
-  // Extract text content from all elements
-  let content = '';
-  
-  // Process all text nodes recursively
-  $body.contents().each((_, node) => {
-          if (node.type === 'text') {
-        const text = (node as cheerio.Text).data || '';
-        if (text.trim()) {
-          content += text + ' ';
-        }
-      } else if (node.type === 'tag') {
-      // For block elements, add line breaks
-      const tagName = node.name;
-      const isBlockElement = ['p', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li', 'br', 'hr'].includes(tagName);
-      
-      if (isBlockElement && content && !content.endsWith('\n')) {
-        content += '\n';
-      }
-      
-      // Recursively process child elements
-      const $element = $(node);
-      $element.contents().each((_, childNode) => {
-        if (childNode.type === 'text') {
-          const text = (childNode as cheerio.Text).data || '';
-          if (text.trim()) {
-            content += text + ' ';
-          }
-        } else if (childNode.type === 'tag') {
-          const childTagName = childNode.name;
-          const isChildBlockElement = ['p', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li', 'br', 'hr'].includes(childTagName);
-          
-          if (isChildBlockElement && content && !content.endsWith('\n')) {
-            content += '\n';
-          }
-          
-          // Extract text from child element
-          const $childElement = $(childNode);
-          const childText = $childElement.text().trim();
-          if (childText) {
-            content += childText + ' ';
-          }
-        }
-      });
-      
-      // Add line break after block elements
-      if (isBlockElement) {
-        content += '\n';
-      }
-    }
-  });
-  
-  // Clean up the content
-  content = content
-    .replace(/\s+/g, ' ') // Replace multiple spaces with single space
-    .replace(/\n\s*\n/g, '\n\n') // Replace multiple newlines with double newlines
-    .replace(/\n\s+/g, '\n') // Remove leading spaces after newlines
-    .trim();
-  
-  return content;
-}
+
 
 function extractAllLinks($: cheerio.CheerioAPI, urlObj: URL, domain: string, links: LinkInfo[], seenLinks: Set<string>): void {
   // Extract ALL links from the entire page (buttons, images, text, etc.)

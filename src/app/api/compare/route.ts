@@ -93,7 +93,7 @@ async function crawlWebsite(url: string): Promise<LinkData> {
         } else {
           externalLinks.push(linkInfo);
         }
-      } catch (error: unknown) {
+      } catch {
         // Skip invalid URLs
         console.warn(`Invalid URL: ${href}`);
       }
